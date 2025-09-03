@@ -1,0 +1,56 @@
+Plain Strategy
+
+📈 Final Monthly Momentum Strategy Summary 6 months
+Total Months: 61
+Win Rate: 68.85%
+Average Monthly Return: 4.61%
+Cumulative Return: 1071.99%
+CAGR: 62.29%
+Max Drawdown: -25.30%
+
+
+📈 Final Monthly Momentum Strategy Summary 12 months
+Total Months: 55
+Win Rate: 70.91%
+Average Monthly Return: 4.21%
+Cumulative Return: 682.72%
+CAGR: 56.66%
+Max Drawdown: -28.10%
+
+
+Buy and sell at next day close
+
+📈 Final Monthly Momentum Strategy Summary 6 months Buffer 20
+Total Months: 60
+Win Rate: 65.00%
+Average Monthly Return: 4.32%
+Cumulative Return: 856.85%
+CAGR: 57.10%
+Max Drawdown: -25.98%
+
+📈 Final Monthly Momentum Strategy Summary 12 months Buffer 20
+Total Months: 54
+Win Rate: 70.37%
+Average Monthly Return: 4.47%
+Cumulative Return: 723.02%
+CAGR: 59.74%
+Max Drawdown: -30.21%
+
+Skip if Nifty is below 200 DMA  -- final 
+
+📈 Final Monthly Momentum Strategy Summary 6 months Buffer 20
+Total Months: 47
+Win Rate: 63.83%
+Average Monthly Return: 4.82%
+Cumulative Return: 648.50%
+CAGR: 67.19%
+Max Drawdown: -17.98%
+
+
+📈 Final Monthly Momentum Strategy Summary 12 months Buffer 20
+Total Months: 44
+Win Rate: 70.45%
+Average Monthly Return: 4.49%
+Cumulative Return: 481.76%
+CAGR: 61.65%
+Max Drawdown: -32.39%

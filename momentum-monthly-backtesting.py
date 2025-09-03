@@ -174,10 +174,28 @@ avg_return = results_df["Net Return %"].mean()
 cumulative_return = (capital - 1_000_000) / 1_000_000 * 100
 win_rate = (results_df["Net Return %"] > 0).mean() * 100
 
-print("\n📈 Final Monthly Momentum Strategy Summary")
+# --- CAGR Calculation ---
+start_value = 1_000_000
+end_value = results_df["Portfolio Value"].iloc[-1]
+years = total_months / 12
+if years > 0:
+    cagr = ((end_value / start_value) ** (1 / years)) - 1
+else:
+    cagr = np.nan
+
+# --- Drawdown Calculation ---
+portfolio_values = results_df["Portfolio Value"]
+rolling_max = portfolio_values.cummax()
+drawdown = (portfolio_values - rolling_max) / rolling_max
+max_drawdown = drawdown.min() * 100  # as percent
+
+print(f"\n📈 Final Monthly Momentum Strategy Summary {lookback_days} months")
 print(f"Total Months: {total_months}")
 print(f"Win Rate: {win_rate:.2f}%")
 print(f"Average Monthly Return: {avg_return:.2f}%")
 print(f"Cumulative Return: {cumulative_return:.2f}%")
-print("\nSample Portfolio:")
-print(results_df.head())
+print(f"CAGR: {cagr*100:.2f}%")
+print(f"Max Drawdown: {max_drawdown:.2f}%")
+
+#print("\nSample Portfolio:")
+#print(results_df.head())
