@@ -19,18 +19,18 @@ start_date = (last_trading_day - pd.DateOffset(years=1, months=6)).replace(day=1
 print("start_date",start_date)
 
 #end_date = datetime.today().strftime("%Y-%m-%d")
-#end_date =  "2025-07-31"
+#end_date =  "2025-09-15"
 end_date = last_trading_day.strftime("%Y-%m-%d")
 print("end_date",end_date)
 
-local_data_path = f"nifty500_prices_{start_date}.pkl"  # You can also use CSV, but pickle is faster for pandas
+local_data_path = f"data/nifty500_prices_{start_date}.pkl"  # You can also use CSV, but pickle is faster for pandas
 
 nifty = yf.download("^NSEI", start=start_date, end=end_date, auto_adjust=True, progress=False)["Close"]
 nifty_ma = nifty.rolling(200).mean()
 
-filenameportfolio = f"portfolio-{end_date}.json"
-filenameTop10 = f"top10-{end_date}.json"
-filenameTop20 = f"top20-{end_date}.json"
+filenameportfolio = f"output/portfolio-{end_date}.json"
+filenameTop10 = f"output/top10-{end_date}.json"
+filenameTop20 = f"output/top20-{end_date}.json"
 # Parameters
 
 lookback_months = 6  # 12 months (approx trading days)
@@ -60,7 +60,7 @@ if missing_tickers:
 
     
 # ---------- Update existing tickers with latest data ----------
-if not data.empty:
+if not data.empty and existing_tickers:
     last_date = data.index.max()
     if last_date < pd.to_datetime(end_date) - timedelta(days=1):
         fetch_start = (last_date + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -98,7 +98,7 @@ momentum_scores = monthly_prices.pct_change(lookback_months)
 scores = momentum_scores.loc[monthly_prices.index[-1]].dropna()
 
 # Path to save portfolio
-portfolio_file = "last_portfolio.json"
+portfolio_file = "output/last_portfolio.json"
 
 # Load last rebalance holdings
 if os.path.exists(portfolio_file):
@@ -176,7 +176,7 @@ pd.DataFrame({
     "Buy": pd.Series(to_buy),
     "Sell": pd.Series(to_sell),
     "Hold": pd.Series(to_hold)
-}).to_csv("latest_rebalance_trades.csv", index=False)
+}).to_csv("output/latest_rebalance_trades.csv", index=False)
 
 
 # Use asof to get the last available value on or before 'date'
