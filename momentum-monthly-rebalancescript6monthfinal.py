@@ -19,7 +19,7 @@ start_date = (last_trading_day - pd.DateOffset(years=1, months=6)).replace(day=1
 print("start_date",start_date)
 
 #end_date = datetime.today().strftime("%Y-%m-%d")
-#end_date =  "2025-09-15"
+#end_date =  "2025-09-30"
 end_date = last_trading_day.strftime("%Y-%m-%d")
 print("end_date",end_date)
 
