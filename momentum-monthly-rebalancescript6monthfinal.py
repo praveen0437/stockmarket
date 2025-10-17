@@ -19,7 +19,7 @@ start_date = (last_trading_day - pd.DateOffset(years=1, months=6)).replace(day=1
 print("start_date",start_date)
 
 #end_date = datetime.today().strftime("%Y-%m-%d")
-#end_date =  "2025-09-30"
+#end_date =  "2025-10-15"
 end_date = last_trading_day.strftime("%Y-%m-%d")
 print("end_date",end_date)
 
@@ -30,7 +30,7 @@ nifty_ma = nifty.rolling(200).mean()
 
 filenameportfolio = f"output/portfolio-{end_date}.json"
 filenameTop10 = f"output/top10-{end_date}.json"
-filenameTop20 = f"output/top20-{end_date}.json"
+filenameTop15 = f"output/top15-{end_date}.json"
 # Parameters
 
 lookback_months = 6  # 12 months (approx trading days)
@@ -108,17 +108,16 @@ else:
     last_holdings = set()
 
 # Filter top 10 positive momentum stocks
-# Filter top 10 positive momentum stocks
 top_10 = set(scores[scores > 0].sort_values(ascending=False).head(10).index.tolist())
-top_20 = set(scores[scores > 0].sort_values(ascending=False).head(20).index.tolist())
+top_15 = set(scores[scores > 0].sort_values(ascending=False).head(15).index.tolist())
 
 # Determine trades
-# Only sell if a holding drops out of the top 20
-to_sell = sorted([stock for stock in last_holdings if stock not in top_20])
+# Only sell if a holding drops out of the top 15
+to_sell = sorted([stock for stock in last_holdings if stock not in top_15])
 to_buy = sorted(top_10 - last_holdings)
-to_hold = sorted((last_holdings & top_10) | (last_holdings & top_20))
+to_hold = sorted((last_holdings & top_10) | (last_holdings & top_15))
 
-not_sell = sorted([stock for stock in last_holdings if stock in top_20 and stock not in top_10])
+not_sell = sorted([stock for stock in last_holdings if stock in top_15 and stock not in top_10])
 
 top_after = set(scores[scores > 0].sort_values(ascending=False).head(10 - len(not_sell)).index.tolist())
 not_Buy = sorted(top_10 - top_after)
@@ -127,10 +126,10 @@ print("\n🧾 Rebalance Summary:")
 print("✅ BUY:", to_buy)
 print("❌ SELL:", to_sell)
 print("🟡 HOLD:", to_hold)
-print("🟡 Not Sell these are in 20:", not_sell)
+print("🟡 Not Sell these are in 15:", not_sell)
 print("🟡 Not Buy if you skip to sell above:", not_Buy)
 
-latest_portfolio = sorted(top_10 | (last_holdings & top_20))
+latest_portfolio = sorted(top_10 | (last_holdings & top_15))
 # Save this rebalance for next time
 with open(portfolio_file, "w") as f:
     json.dump(latest_portfolio, f)
@@ -159,15 +158,15 @@ with open(filenameTop10, "w") as f:
     for record in top10_data:
         f.write(json.dumps(record) + "\n")
 
-top20_data = []
-top_20_sorted = sorted(top_20)
-for stock in top_20_sorted:
+top15_data = []
+top_15_sorted = sorted(top_15)
+for stock in top_15_sorted:
     price = monthly_prices.loc[monthly_prices.index[-1], stock]
     momentum = scores.get(stock, float('nan'))
-    top20_data.append({"ticker": stock, "price": price, "momentum_score": momentum})
+    top15_data.append({"ticker": stock, "price": price, "momentum_score": momentum})
 
-with open(filenameTop20, "w") as f:
-    for record in top20_data:
+with open(filenameTop15, "w") as f:
+    for record in top15_data:
         f.write(json.dumps(record) + "\n")
 
 

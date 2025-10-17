@@ -17,7 +17,7 @@ end_date = datetime.today().strftime("%Y-%m-%d")
 
 # Parameters
 
-lookback_days = 12  # 12 months (approx trading days)
+lookback_days = 6  # 12 months (approx trading days)
 capital = 1_000_000
 transaction_cost = 0.001  # 0.1% per trade (buy and sell)
 rebalance_frequency = 'M'  # Monthly
@@ -95,27 +95,29 @@ print("Months of data:", len(monthly_prices))
 portfolio_history = []
 
 current_holdings = set()
+# Counters for holdings size
+times_below_10 = 0
+times_above_10 = 0
+max_holdings = 0
 
 # Main backtest loop: rebalance monthly after lookback period
 for date in momentum_scores.index[lookback_days:]:
     scores = momentum_scores.loc[date].dropna()
+
+    # top 10 for new buys, top 15 buffer to avoid selling winners
     top_10 = set(scores.sort_values(ascending=False).head(10).index.tolist())
-    
-    if not current_holdings:
-        # First month: buy all top_10
-        trades = top_10
-    else:
-        # Buy new stocks only
-        trades = top_10 - current_holdings
+    top_15 = set(scores.sort_values(ascending=False).head(15).index.tolist())
 
-##    if trades:
-##        print(f"🗓 {date.strftime('%Y-%m-%d')} - New Trades: {sorted(trades)}")
-##    else:
-##        print(f"🗓 {date.strftime('%Y-%m-%d')} - No Change in Holdings")
+    # determine target holdings: keep current holdings that are still in top15, plus current top10
+    target_holdings = (current_holdings & top_15) | top_10
 
+    # trades to execute: buys and sells relative to current_holdings -> target_holdings
+    to_buy = target_holdings - current_holdings
+    to_sell = current_holdings - target_holdings
+    trades = to_buy | to_sell
 
-    # Skip if no change in holdings
-    if trades == set():
+    # Skip if no actual trades
+    if len(trades) == 0:
         portfolio_history.append({
             "Rebalance Date": date.strftime("%Y-%m-%d"),
             "Next Date": "-",  # no trade made
@@ -126,26 +128,50 @@ for date in momentum_scores.index[lookback_days:]:
         })
         continue
 
-    # Rebalance into new top_10
-    prices = monthly_prices.loc[date, list(top_10)]
-    weights = capital / len(top_10) / prices
-    position_values = prices * weights
+    # Allocation and P&L calculation
+    prices = monthly_prices.loc[date, list(target_holdings)]
 
     next_date_idx = monthly_prices.index.get_loc(date) + 1
     if next_date_idx >= len(monthly_prices):
         break
     next_date = monthly_prices.index[next_date_idx]
-    next_prices = monthly_prices.loc[next_date, list(top_10)]
+    next_prices = monthly_prices.loc[next_date, list(target_holdings)]
 
-    returns = (next_prices - prices) / prices
-    gross_return = (returns * weights * prices).sum() / capital
+    # Determine invest ratio: keep cash if holdings < 13
+    capital_before = capital
+    if len(target_holdings) == 0:
+        invest_ratio = 0.0
+    elif len(target_holdings) < 13:
+        invest_ratio = len(target_holdings) / 10.0
+    else:
+        invest_ratio = 1.0
 
-    # Calculate transaction cost only for changed positions
-    n_trades = len(trades)
-    transaction_cost_total = capital * transaction_cost * 2 * (n_trades / len(top_10))
+    invested_capital = capital_before * invest_ratio
 
-    net_return = gross_return - (transaction_cost_total / capital)
-    capital *= (1 + net_return)
+    if len(target_holdings) > 0 and invested_capital > 0:
+        allocation_per_pos = invested_capital / len(target_holdings)
+        # avoid division by zero prices
+        safe_prices = prices.replace(0, np.nan)
+        shares = allocation_per_pos / safe_prices
+        shares = shares.fillna(0)
+        pnl = (next_prices - prices) * shares
+        total_pnl = pnl.sum()
+    else:
+        total_pnl = 0.0
+
+    # Transaction cost approximated from invested capital
+    n_trades = len(to_buy) + len(to_sell)
+    if len(target_holdings) > 0:
+        transaction_cost_total = invested_capital * transaction_cost * 2 * (n_trades / max(1, len(target_holdings)))
+    else:
+        transaction_cost_total = 0.0
+
+    # Update capital: keep uninvested cash, add P&L, subtract transaction costs
+    capital = capital_before + total_pnl - transaction_cost_total
+
+    # Reporting returns relative to capital before rebalance
+    gross_return = total_pnl / capital_before if capital_before != 0 else 0.0
+    net_return = (total_pnl - transaction_cost_total) / capital_before if capital_before != 0 else 0.0
 
     portfolio_history.append({
         "Rebalance Date": date.strftime("%Y-%m-%d"),
@@ -153,10 +179,22 @@ for date in momentum_scores.index[lookback_days:]:
         "Top Stocks": list(top_10),
         "Gross Return %": round(gross_return * 100, 2),
         "Net Return %": round(net_return * 100, 2),
-        "Portfolio Value": round(capital, 2)
+        "Portfolio Value": round(capital, 2),
+        "To Buy": sorted(to_buy),
+        "To Sell": sorted(to_sell),
+        "Held (kept in buffer)": sorted(current_holdings & top_15)
     })
 
-    current_holdings = top_10
+    # update current holdings to the target set
+    current_holdings = set(target_holdings)
+     # Update counters
+    holding_count = len(current_holdings)
+    if holding_count < 10:
+        times_below_10 += 1
+    if holding_count > 10:
+        times_above_10 += 1
+    if holding_count > max_holdings:
+        max_holdings = holding_count
 print("Top momentum scores:", scores.sort_values(ascending=False).head(10))
 print("Trades:", trades)
 print("current_holdings:", current_holdings)
@@ -196,6 +234,11 @@ print(f"Average Monthly Return: {avg_return:.2f}%")
 print(f"Cumulative Return: {cumulative_return:.2f}%")
 print(f"CAGR: {cagr*100:.2f}%")
 print(f"Max Drawdown: {max_drawdown:.2f}%")
+print("\nHolding size counters:")
+print(f"Times holdings < 10: {times_below_10}")
+print(f"Times holdings > 10: {times_above_10}")
+print(f"Max holdings observed: {max_holdings}")
+
 
 #print("\nSample Portfolio:")
 #print(results_df.head())
